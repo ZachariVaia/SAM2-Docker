@@ -1,0 +1,19 @@
+{
+  "image": "images/00000022.jpg",
+  "used_center_fallback": false,
+  "num_points": 2,
+  "points": [
+    [
+      330.09759521484375,
+      287.77813720703125,
+      1
+    ],
+    [
+      440.4146423339844,
+      500.86920166015625,
+      0
+    ]
+  ],
+  "config_name": "configs/sam2.1/sam2.1_hiera_l.yaml",
+  "checkpoint": "sam2.1_hiera_large.pt"
+}
