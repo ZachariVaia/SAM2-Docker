@@ -597,10 +597,13 @@ in_dir_images = "${DATA_DIR}"
 masks_root  = os.path.join(out_dir, "maskes")
 images_root = os.path.join(out_dir, "images")
 masked_root = os.path.join(out_dir, "images_masked")
+masked_black_root = os.path.join(out_dir, "images_masked_black")
+
 
 os.makedirs(masks_root, exist_ok=True)
 os.makedirs(images_root, exist_ok=True)
 os.makedirs(masked_root, exist_ok=True)
+os.makedirs(masked_black_root, exist_ok=True)
 
 def unique_path(dest_dir, filename):
     base, ext = os.path.splitext(filename)
@@ -650,6 +653,42 @@ for mpath in mask_paths:
     dest_rgba = unique_path(masked_root, f"{stem}.png")
     im_rgba.save(dest_rgba)
 
+
+
+for mpath in mask_paths:
+    base = os.path.basename(mpath)
+    stem = base[:-9]  # Αφαιρούμε το _mask.png από το όνομα της μάσκας
+
+    candidates = [p for p in img_paths if os.path.splitext(os.path.basename(p))[0] == stem]
+    if not candidates:
+        print(f"Warning: no original image found for mask {base}")
+        continue
+
+    ipath = candidates[0]
+    im = Image.open(ipath).convert("RGBA")  # Ανοίγουμε την εικόνα με RGBA
+    mimg = Image.open(mpath).convert("L")   # Η μάσκα είναι grayscale
+
+    if mimg.size != im.size:
+        mimg = mimg.resize(im.size, Image.NEAREST)  # Κάνουμε resize τη μάσκα στην εικόνα αν είναι αναγκαίο
+
+    # Δημιουργία νέας εικόνας με μαύρο φόντο
+    im_black = im.copy()  
+    black_pixels = mimg.point(lambda p: 0 if p == 0 else 255)  # Μαύρο όπου η μάσκα είναι 0
+
+    # Εφαρμογή της μάσκας στην εικόνα με μαύρο φόντο
+    r, g, b, a = im.split()
+    new_r = Image.composite(r, Image.new("L", r.size, 0), black_pixels)
+    new_g = Image.composite(g, Image.new("L", g.size, 0), black_pixels)
+    new_b = Image.composite(b, Image.new("L", b.size, 0), black_pixels)
+
+    # Δημιουργούμε τη νέα εικόνα με τα αντίστοιχα pixels
+    im_black = Image.merge("RGBA", (new_r, new_g, new_b, a))  
+
+    # Αποθήκευση της εικόνας με μαύρο φόντο
+    dest_black = unique_path(masked_black_root, f"{stem}.png")
+    im_black.save(dest_black)
+
+print(f">> images_masked_black/: {len(mask_paths)} files (flat)")
 print(f">> maskes/: {len(mask_paths)} files (flat)")
 print(f">> images/: {len(img_paths)} files (flat)")
 print(f">> images_masked/: {len(mask_paths)} files (flat)")
